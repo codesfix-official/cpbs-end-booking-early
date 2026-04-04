@@ -3,7 +3,7 @@
 Plugin Name: CPBS End Booking Early
 Description: Adds an admin-only "End Booking" action for active Car Park Booking System bookings.
 Version: 1.0.0
-Author: GitHub Copilot
+Author: CodesFix
 */
 
 if (!defined('ABSPATH')) {
