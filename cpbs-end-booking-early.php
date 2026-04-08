@@ -161,6 +161,7 @@ final class CPBSEndBookingEarly
         }
 
         if ($status_updated) {
+            $this->ensure_status_nonblocking($completed_status_id);
             $this->sync_booking_status($booking_id);
 
             if (method_exists($booking_model, 'sendEmailBookingChangeStatus')) {
@@ -282,6 +283,45 @@ final class CPBSEndBookingEarly
         }
 
         return 1;
+    }
+
+    private function ensure_status_nonblocking($status_id)
+    {
+        $status_id = (int) $status_id;
+        if ($status_id <= 0 || !class_exists('CPBSOption')) {
+            return;
+        }
+
+        $should_update = apply_filters('cpbs_end_booking_early_update_nonblocking_statuses', true, $status_id);
+        if (!$should_update) {
+            return;
+        }
+
+        $nonblocking = CPBSOption::getOption('booking_status_nonblocking');
+        if (!is_array($nonblocking)) {
+            $nonblocking = array();
+        }
+
+        $normalized = array();
+        foreach ($nonblocking as $value) {
+            $value = (int) $value;
+            if ($value > 0) {
+                $normalized[] = $value;
+            }
+        }
+
+        if (in_array($status_id, $normalized, true)) {
+            return;
+        }
+
+        $normalized[] = $status_id;
+        $normalized = array_values(array_unique($normalized));
+
+        CPBSOption::updateOption(
+            array(
+                'booking_status_nonblocking' => $normalized,
+            )
+        );
     }
 
     private function sync_booking_status($booking_id)
